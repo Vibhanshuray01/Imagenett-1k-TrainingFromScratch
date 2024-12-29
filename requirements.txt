@@ -1,8 +1,16 @@
 --find-links https://download.pytorch.org/whl/cu118
-torch
-torchvision
-pytorch-lightning>=2.0.0
+torch>=2.0
+torchvision>=0.15
+pytorch-lightning>=2.1
+matplotlib
+numpy
+pandas
+tensorboard
+scikit-learn
+opencv-python
+albumentations
+timm>=0.9.2
+tqdm
 datasets
-timm
 pillow
-python-dotenv 
+python-dotenv
