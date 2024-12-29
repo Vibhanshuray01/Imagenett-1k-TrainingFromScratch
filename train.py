@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping
 from src.config import TrainingConfig
-from src.dataset import ImageNetLocalDataset, get_transforms  # Update import
+from src.dataset import ImageNetLocalDataset, get_transforms
 from src.model import ResNet50Module
 import torch
 
@@ -21,7 +21,7 @@ def main():
 
     val_dataset = ImageNetLocalDataset(
         root_dir=imagenet_root,
-        split="val",  # Validation folder
+        split="val",
         transform=get_transforms(config, is_train=False)
     )
 
@@ -31,7 +31,7 @@ def main():
         batch_size=config.batch_size,
         num_workers=config.num_workers,
         pin_memory=True,
-        shuffle=True  # Shuffle for training
+        shuffle=True
     )
 
     val_loader = torch.utils.data.DataLoader(
@@ -39,7 +39,7 @@ def main():
         batch_size=config.batch_size,
         num_workers=config.num_workers,
         pin_memory=True,
-        shuffle=False  # No shuffle for validation
+        shuffle=False
     )
 
     # Create model
@@ -47,6 +47,7 @@ def main():
 
     # Setup callbacks
     callbacks = [
+        EarlyStopping(monitor="val_acc1", patience=5, mode="max"),  # Early stopping
         ModelCheckpoint(
             monitor='val_acc1',
             mode='max',
@@ -62,10 +63,10 @@ def main():
         precision=config.precision,
         callbacks=callbacks,
         gradient_clip_val=1.0,
-        accumulate_grad_batches=1,
-        deterministic=False,
+        accumulate_grad_batches=2,  # Simulate larger batch size
+        check_val_every_n_epoch=2,  # Validate every 2 epochs
         devices=1,  # Use 1 GPU
-        accelerator="gpu"  # Specify GPU
+        accelerator="gpu"
     )
 
     # Train model

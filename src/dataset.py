@@ -59,7 +59,7 @@ def get_transforms(config, is_train=True):
         return transforms.Compose([
             transforms.RandomResizedCrop(config.image_size),
             transforms.RandomHorizontalFlip(),
-            transforms.RandAugment(num_ops=2, magnitude=9),
+            transforms.RandAugment(num_ops=1, magnitude=5),  # Reduced augmentation intensity
             transforms.ToTensor(),
             transforms.Normalize(
                 mean=[0.485, 0.456, 0.406],

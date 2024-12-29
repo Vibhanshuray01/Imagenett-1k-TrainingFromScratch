@@ -3,12 +3,9 @@ from dataclasses import dataclass
 @dataclass
 class TrainingConfig:
     # Training params
-    batch_size: int = 64
-    num_workers: int = 4
-    max_epochs: int = 2
-    # batch_size: int = 1024
-    # num_workers: int = 8
-    # max_epochs: int = 100
+    batch_size: int = 32  # Reduced to fit GPU memory
+    num_workers: int = 8  # Optimized for faster data loading
+    max_epochs: int = 10  # Increased for better accuracy
     precision: str = "16-mixed"  # Use mixed precision training
     
     # Optimizer params
@@ -26,5 +23,5 @@ class TrainingConfig:
     cutmix_alpha: float = 1.0
     
     # Scheduler params
-    warmup_epochs: int = 5
-    min_lr: float = 1e-5 
+    warmup_epochs: int = 2  # Reduced for faster convergence
+    min_lr: float = 1e-5

@@ -11,7 +11,8 @@ class ResNet50Module(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.model = resnet50(num_classes=config.num_classes)
+        self.model = resnet50(weights='IMAGENET1K_V2')  # Use pretrained weights
+        self.model.fc = nn.Linear(self.model.fc.in_features, config.num_classes)  # Adjust final layer
         
         # Initialize mixup
         self.mixup_fn = mixup.Mixup(
@@ -52,7 +53,7 @@ class ResNet50Module(pl.LightningModule):
         # Calculate accuracy
         acc1, acc5 = self._accuracy(outputs, targets, topk=(1, 5))
         
-        # Log metrics - add sync_dist=True for proper multi-GPU logging
+        # Log metrics
         self.log('val_loss', loss, prog_bar=True, sync_dist=True)
         self.log('val_acc1', acc1, prog_bar=True, sync_dist=True)
         self.log('val_acc5', acc5, prog_bar=True, sync_dist=True)
@@ -96,4 +97,4 @@ class ResNet50Module(pl.LightningModule):
             for k in topk:
                 correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
                 res.append(correct_k.mul_(100.0 / batch_size))
-            return res 
+            return res
