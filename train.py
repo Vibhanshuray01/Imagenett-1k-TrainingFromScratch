@@ -14,13 +14,13 @@ def main():
 
     # Create datasets
     train_dataset = ImageNetLocalDataset(
-        root_dir=imagenet_root,
+        root_dir="/media/data/ILSVRC/Data/CLS-LOC/train",
         split="train",
         transform=get_transforms(config, is_train=True)
     )
 
     val_dataset = ImageNetLocalDataset(
-        root_dir=imagenet_root,
+        root_dir="/media/data/ILSVRC/Data/CLS-LOC/val",
         split="val",
         transform=get_transforms(config, is_train=False)
     )
