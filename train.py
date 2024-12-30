@@ -56,6 +56,14 @@ def main():
     # Create model
     model = ResNet50Module(config)
 
+    # Specify the directory for saving checkpoints
+    checkpoint_dir = config.checkpoint_dir  # This uses the value from config
+
+    # Ensure the directory exists
+    import os
+    if not os.path.exists(checkpoint_dir):
+        os.makedirs(checkpoint_dir)
+
     # Setup callbacks
     callbacks = [
         EarlyStopping(monitor="val_acc1", patience=5, mode="max"),  # Early stopping
@@ -63,7 +71,8 @@ def main():
             monitor='val_acc1',
             mode='max',
             save_top_k=1,
-            filename='resnet50-{epoch:02d}-{val_acc1:.2f}'
+            filename='resnet50-{epoch:02d}-{val_acc1:.2f}',
+            dirpath=checkpoint_dir  # Specify the directory to save the checkpoints
         ),
         LearningRateMonitor(logging_interval='step')
     ]
@@ -75,7 +84,7 @@ def main():
         callbacks=callbacks,
         gradient_clip_val=1.0,
         accumulate_grad_batches=2,  # Simulate larger batch size
-        check_val_every_n_epoch=2,  # Validate every 2 epochs
+        check_val_every_n_epoch=1,  # Validate every epoch
         devices=1,  # Use 1 GPU
         accelerator="gpu"
     )
@@ -83,7 +92,9 @@ def main():
     # Train model
     trainer.fit(model, train_loader, val_loader)
 
+    # Optionally, log final validation accuracy after training
+    print(f"Final validation accuracy: {trainer.callback_metrics['val_acc1']:.2f}")
+
 
 if __name__ == "__main__":
     main()
-s

@@ -25,3 +25,6 @@ class TrainingConfig:
     # Scheduler params
     warmup_epochs: int = 2  # Reduced for faster convergence
     min_lr: float = 1e-5
+    
+    # Save model path (you might also want to keep this configurable in your main script)
+    checkpoint_dir: str = "/media/data/saved_models"
