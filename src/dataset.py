@@ -18,8 +18,12 @@ class ImageNetLocalDataset(Dataset):
         self.image_paths = []
         self.labels = []
 
+        # Print the path being used for debugging
+        print(f"Using root directory: {self.root_dir}")
+
         for class_id, class_name in enumerate(sorted(os.listdir(self.root_dir))):
             class_dir = os.path.join(self.root_dir, class_name)
+            print(f"Accessing class directory: {class_dir}")  # Debugging line
             if os.path.isdir(class_dir):
                 for image_name in os.listdir(class_dir):
                     self.image_paths.append(os.path.join(class_dir, image_name))
