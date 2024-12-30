@@ -13,7 +13,7 @@ class ImageNetLocalDataset(Dataset):
             split (str): "train" or "val" to specify which dataset to use.
             transform (callable, optional): Optional transform to be applied on a sample.
         """
-        self.root_dir = root_dir  # No need to append 'split' here
+        self.root_dir = root_dir  # Keep the root_dir as is
         self.split = split  # Store the split value (train or val)
         self.transform = transform
         self.image_paths = []
@@ -22,7 +22,9 @@ class ImageNetLocalDataset(Dataset):
         # Print the path being used for debugging
         print(f"Using root directory: {self.root_dir}")
 
-        split_dir = os.path.join(self.root_dir, self.split)
+        split_dir = os.path.join(self.root_dir, self.split)  # Use split dir correctly
+        print(f"Using split directory: {split_dir}")  # Debugging line
+
         for class_id, class_name in enumerate(sorted(os.listdir(split_dir))):
             class_dir = os.path.join(split_dir, class_name)
             print(f"Accessing class directory: {class_dir}")  # Debugging line
@@ -30,6 +32,7 @@ class ImageNetLocalDataset(Dataset):
                 for image_name in os.listdir(class_dir):
                     self.image_paths.append(os.path.join(class_dir, image_name))
                     self.labels.append(class_id)
+
 
     def __len__(self):
         return len(self.image_paths)

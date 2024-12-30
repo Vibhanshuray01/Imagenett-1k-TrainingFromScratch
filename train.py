@@ -12,15 +12,15 @@ def main():
     # Path to the root directory of ImageNet dataset
     imagenet_root = "/mnt/imagenet"  # Change this to the mount path of your volume
 
-    # Create datasets
+    # Create datasetsa
     train_dataset = ImageNetLocalDataset(
-        root_dir="/media/data/ILSVRC/Data/CLS-LOC/train",
+        root_dir="/media/data/ILSVRC/Data/CLS-LOC",
         split="train",
         transform=get_transforms(config, is_train=True)
     )
 
     val_dataset = ImageNetLocalDataset(
-        root_dir="/media/data/ILSVRC/Data/CLS-LOC/val",
+        root_dir="/media/data/ILSVRC/Data/CLS-LOC",
         split="val",
         transform=get_transforms(config, is_train=False)
     )
