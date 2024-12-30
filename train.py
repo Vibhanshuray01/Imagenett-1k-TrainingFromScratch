@@ -12,7 +12,7 @@ def main():
     # Path to the root directory of ImageNet dataset
     imagenet_root = "/mnt/imagenet"  # Change this to the mount path of your volume
 
-    # Create datasetsa
+    # Create datasets
     train_dataset = ImageNetLocalDataset(
         root_dir="/media/data/ILSVRC/Data/CLS-LOC",
         split="train",
@@ -25,13 +25,18 @@ def main():
         transform=get_transforms(config, is_train=False)
     )
 
+    # Print dataset sizes for debugging
+    print(f"Training dataset size: {len(train_dataset)}")
+    print(f"Validation dataset size: {len(val_dataset)}")
+
     # Create dataloaders
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config.batch_size,
         num_workers=config.num_workers,
         pin_memory=True,
-        shuffle=True
+        shuffle=True,
+        drop_last=True  # Ensures no incomplete batches
     )
 
     val_loader = torch.utils.data.DataLoader(
@@ -39,8 +44,14 @@ def main():
         batch_size=config.batch_size,
         num_workers=config.num_workers,
         pin_memory=True,
-        shuffle=False
+        shuffle=False,
+        drop_last=False  # Validation can handle incomplete batches
     )
+
+    # Debugging: Print actual batch size
+    for images, targets in train_loader:
+        print(f"Batch size during training: {images.size(0)}")
+        break  # Check only the first batch
 
     # Create model
     model = ResNet50Module(config)
@@ -75,3 +86,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+s
