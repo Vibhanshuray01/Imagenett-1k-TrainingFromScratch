@@ -25,9 +25,13 @@ def organize_validation_data(val_dir):
     for class_name in tqdm(class_names):
         os.makedirs(os.path.join(val_dir, class_name), exist_ok=True)
     
+    # Read ground truth file from the correct location
+    ground_truth_file = os.path.join(os.path.dirname(val_dir), 'ILSVRC2012_validation_ground_truth.txt')
+    print(f"Reading ground truth file from: {ground_truth_file}")
+    
     # Read ground truth file and move images
     print("Moving files to class directories...")
-    with open('ILSVRC2012_validation_ground_truth.txt', 'r') as f:
+    with open(ground_truth_file, 'r') as f:
         ground_truth = [int(line.strip()) for line in f.readlines()]
     
     for idx, class_idx in enumerate(tqdm(ground_truth)):
