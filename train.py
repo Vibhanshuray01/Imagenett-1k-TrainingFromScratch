@@ -77,7 +77,13 @@ def main():
 
     # Setup callbacks
     callbacks = [
-        EarlyStopping(monitor="val_acc1", patience=10, mode="max"),  # Increased patience
+        EarlyStopping(
+            monitor='val_loss',
+            min_delta=0.00,
+            patience=3,
+            verbose=True,
+            mode='min'
+        ),
         ModelCheckpoint(
             monitor='val_acc1',
             mode='max',
@@ -95,10 +101,14 @@ def main():
         precision=config.precision,
         callbacks=callbacks,
         gradient_clip_val=1.0,
-        accumulate_grad_batches=2,  # Simulate larger batch size
-        check_val_every_n_epoch=1,  # Validate every epoch
-        devices=1,  # Use 1 GPU
-        accelerator="gpu"
+        accumulate_grad_batches=2,
+        check_val_every_n_epoch=1,
+        devices=1,
+        accelerator="gpu",
+        deterministic=True,
+        enable_progress_bar=True,
+        log_every_n_steps=50,
+        strategy='ddp_find_unused_parameters_false'
     )
 
     # Train model

@@ -42,7 +42,7 @@ class ResNet50Module(pl.LightningModule):
         loss = self.criterion(outputs, targets)
         
         # Log metrics
-        self.log('train_loss', loss, prog_bar=True)
+        self.log('train_loss', loss, prog_bar=True, on_epoch=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -54,9 +54,9 @@ class ResNet50Module(pl.LightningModule):
         acc1, acc5 = self._accuracy(outputs, targets, topk=(1, 5))
         
         # Log metrics
-        self.log('val_loss', loss, prog_bar=True, sync_dist=True)
-        self.log('val_acc1', acc1, prog_bar=True, sync_dist=True)
-        self.log('val_acc5', acc5, prog_bar=True, sync_dist=True)
+        self.log('val_loss', loss, prog_bar=True, sync_dist=True, on_epoch=True)
+        self.log('val_acc1', acc1, prog_bar=True, sync_dist=True, on_epoch=True)
+        self.log('val_acc5', acc5, prog_bar=True, sync_dist=True, on_epoch=True)
         
         return loss
 
