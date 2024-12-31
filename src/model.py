@@ -3,41 +3,31 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.models import resnet50
-from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.optim import SGD
-import timm.data.mixup as mixup
+from torch.optim.lr_scheduler import OneCycleLR
 
-class ResNet50Module(pl.LightningModule):
+class ResNet50(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
+        self.save_hyperparameters()
         self.config = config
-        self.model = resnet50(weights='IMAGENET1K_V2')  # Use pretrained weights
-        self.model.fc = nn.Linear(self.model.fc.in_features, config.num_classes)  # Adjust final layer
         
-        # Initialize mixup
-        self.mixup_fn = mixup.Mixup(
-            mixup_alpha=config.mixup_alpha,
-            cutmix_alpha=config.cutmix_alpha,
-            label_smoothing=config.label_smoothing,
-            num_classes=config.num_classes
-        )
+        # Initialize model
+        self.model = resnet50(weights=None)  # Training from scratch
         
         # Loss function with label smoothing
         self.criterion = nn.CrossEntropyLoss(label_smoothing=config.label_smoothing)
         
-        # Save hyperparameters
-        self.save_hyperparameters()
-
     def forward(self, x):
         return self.model(x)
-
+        
     def training_step(self, batch, batch_idx):
         images, targets = batch
         outputs = self(images)
         loss = self.criterion(outputs, targets)
         
-        # Calculate training accuracy
-        acc1, acc5 = self._accuracy(outputs, targets, topk=(1, 5))
+        # Calculate accuracy
+        acc1, acc5 = self._accuracy(outputs, targets)
         
         # Log metrics
         self.log('train_loss', loss, prog_bar=True, on_epoch=True)
@@ -45,24 +35,23 @@ class ResNet50Module(pl.LightningModule):
         self.log('train_acc5', acc5, prog_bar=True, on_epoch=True)
         
         return loss
-
+        
     def validation_step(self, batch, batch_idx):
         images, targets = batch
         outputs = self(images)
-        loss = F.cross_entropy(outputs, targets)
+        loss = self.criterion(outputs, targets)
         
         # Calculate accuracy
-        acc1, acc5 = self._accuracy(outputs, targets, topk=(1, 5))
+        acc1, acc5 = self._accuracy(outputs, targets)
         
         # Log metrics
-        self.log('val_loss', loss, prog_bar=True, sync_dist=True, on_epoch=True)
-        self.log('val_acc1', acc1, prog_bar=True, sync_dist=True, on_epoch=True)
-        self.log('val_acc5', acc5, prog_bar=True, sync_dist=True, on_epoch=True)
+        self.log('val_loss', loss, prog_bar=True, sync_dist=True)
+        self.log('val_acc1', acc1, prog_bar=True, sync_dist=True)
+        self.log('val_acc5', acc5, prog_bar=True, sync_dist=True)
         
         return loss
-
+        
     def configure_optimizers(self):
-        # Create optimizer
         optimizer = SGD(
             self.parameters(),
             lr=self.config.base_lr,
@@ -70,21 +59,19 @@ class ResNet50Module(pl.LightningModule):
             weight_decay=self.config.weight_decay
         )
         
-        # Create scheduler
-        scheduler = {
-            'scheduler': CosineAnnealingLR(
-                optimizer,
-                T_max=self.config.max_epochs,
-                eta_min=self.config.min_lr
-            ),
-            'interval': 'epoch',
-            'frequency': 1
-        }
+        scheduler = OneCycleLR(
+            optimizer,
+            max_lr=self.config.base_lr,
+            epochs=self.config.max_epochs,
+            steps_per_epoch=self.trainer.estimated_stepping_batches // self.config.max_epochs,
+            pct_start=self.config.warmup_epochs / self.config.max_epochs,
+            div_factor=10,
+            final_div_factor=100,
+        )
         
-        return [optimizer], [scheduler]
-
-    @staticmethod
-    def _accuracy(output, target, topk=(1,)):
+        return {"optimizer": optimizer, "lr_scheduler": {"scheduler": scheduler, "interval": "step"}}
+    
+    def _accuracy(self, output, target, topk=(1, 5)):
         """Computes the accuracy over the k top predictions"""
         with torch.no_grad():
             maxk = max(topk)

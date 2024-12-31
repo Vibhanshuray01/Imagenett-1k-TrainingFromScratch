@@ -1,44 +1,41 @@
+import os
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, RichProgressBar
 from pytorch_lightning.loggers import TensorBoardLogger
 from src.config import TrainingConfig
-from src.dataset import ImageNetLocalDataset, get_transforms
-from src.model import ResNet50Module
+from src.dataset import ImageNetDataset, get_transforms
+from src.model import ResNet50
 import torch
-import os
 
 def main():
-    # Set tensor core precision
+    # Enable tensor cores
     torch.set_float32_matmul_precision('high')
     
     # Initialize config
     config = TrainingConfig()
     
     # Create datasets
-    train_dataset = ImageNetLocalDataset(
-        root_dir="/media/data/ILSVRC/Data/CLS-LOC",
+    train_dataset = ImageNetDataset(
+        root_dir=config.data_dir,
         split="train",
-        transform=get_transforms(config, is_train=True)
+        transform=get_transforms(config.image_size, is_training=True)
     )
     
-    val_dataset = ImageNetLocalDataset(
-        root_dir="/media/data/ILSVRC/Data/CLS-LOC",
+    val_dataset = ImageNetDataset(
+        root_dir=config.data_dir,
         split="val",
-        transform=get_transforms(config, is_train=False)
+        transform=get_transforms(config.image_size, is_training=False)
     )
-
-    print(f"Training dataset size: {len(train_dataset)}")
-    print(f"Validation dataset size: {len(val_dataset)}")
-
+    
+    # Create dataloaders
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config.batch_size,
         num_workers=config.num_workers,
         pin_memory=True,
-        shuffle=True,
-        drop_last=True
+        shuffle=True
     )
-
+    
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
         batch_size=config.batch_size,
@@ -46,42 +43,40 @@ def main():
         pin_memory=True,
         shuffle=False
     )
-
+    
     # Create model
-    model = ResNet50Module(config)
-
+    model = ResNet50(config)
+    
     # Setup logging
     logger = TensorBoardLogger("logs", name="resnet50")
-
+    
     # Create callbacks
     callbacks = [
         ModelCheckpoint(
+            dirpath=config.output_dir,
+            filename='resnet50-{epoch:02d}-{val_acc1:.2f}',
             monitor='val_acc1',
             mode='max',
-            save_top_k=3,
-            filename='resnet50-epoch{epoch:02d}-val_acc{val_acc1:.2f}',
-            dirpath=config.checkpoint_dir
+            save_top_k=3
         ),
         LearningRateMonitor(logging_interval='step'),
         RichProgressBar()
     ]
-
+    
     # Initialize trainer
     trainer = pl.Trainer(
         max_epochs=config.max_epochs,
         precision=config.precision,
-        callbacks=callbacks,
+        accelerator="gpu",
+        devices=1,
         logger=logger,
+        callbacks=callbacks,
         gradient_clip_val=1.0,
         accumulate_grad_batches=2,
-        devices=1,
-        accelerator="gpu",
         deterministic=True,
-        enable_progress_bar=True,
-        log_every_n_steps=50,
-        strategy='ddp_find_unused_parameters_false'
+        log_every_n_steps=50
     )
-
+    
     # Train model
     trainer.fit(model, train_loader, val_loader)
 
