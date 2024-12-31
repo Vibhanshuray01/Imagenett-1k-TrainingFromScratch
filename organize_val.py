@@ -32,12 +32,12 @@ def organize_validation_data(val_dir):
     # Read ground truth file and move images
     print("Moving files to class directories...")
     with open(ground_truth_file, 'r') as f:
-        ground_truth = [int(line.strip()) for line in f.readlines()]
+        class_ids = [line.strip() for line in f.readlines()]  # These are now directly the folder names
     
-    for idx, class_idx in enumerate(tqdm(ground_truth)):
+    for idx, class_id in enumerate(tqdm(class_ids)):
         img_name = f'ILSVRC2012_val_{idx+1:08d}.JPEG'
         src = os.path.join(temp_dir, img_name)
-        dst = os.path.join(val_dir, class_names[class_idx-1], img_name)
+        dst = os.path.join(val_dir, class_id, img_name)
         if os.path.exists(src):
             shutil.move(src, dst)
         else:
