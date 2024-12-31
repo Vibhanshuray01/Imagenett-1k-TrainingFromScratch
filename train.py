@@ -1,9 +1,21 @@
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping, Callback
 from src.config import TrainingConfig
 from src.dataset import ImageNetLocalDataset, get_transforms
 from src.model import ResNet50Module
 import torch
+import os
+
+
+class MetricsLoggerCallback(Callback):
+    def on_epoch_end(self, trainer, pl_module):
+        metrics = trainer.callback_metrics
+        epoch = trainer.current_epoch
+        val_acc1 = metrics.get("val_acc1", "N/A")
+        val_acc5 = metrics.get("val_acc5", "N/A")
+        val_loss = metrics.get("val_loss", "N/A")
+        print(f"Epoch {epoch} - val_acc1: {val_acc1}, val_acc5: {val_acc5}, val_loss: {val_loss}")
+
 
 def main():
     # Initialize config
@@ -60,13 +72,12 @@ def main():
     checkpoint_dir = config.checkpoint_dir  # This uses the value from config
 
     # Ensure the directory exists
-    import os
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
 
     # Setup callbacks
     callbacks = [
-        EarlyStopping(monitor="val_acc1", patience=5, mode="max"),  # Early stopping
+        EarlyStopping(monitor="val_acc1", patience=10, mode="max"),  # Increased patience
         ModelCheckpoint(
             monitor='val_acc1',
             mode='max',
@@ -74,7 +85,8 @@ def main():
             filename='resnet50-{epoch:02d}-{val_acc1:.2f}',
             dirpath=checkpoint_dir  # Specify the directory to save the checkpoints
         ),
-        LearningRateMonitor(logging_interval='step')
+        LearningRateMonitor(logging_interval='step'),
+        MetricsLoggerCallback()  # Custom callback to log and print metrics
     ]
 
     # Initialize trainer
@@ -93,7 +105,8 @@ def main():
     trainer.fit(model, train_loader, val_loader)
 
     # Optionally, log final validation accuracy after training
-    print(f"Final validation accuracy: {trainer.callback_metrics['val_acc1']:.2f}")
+    metrics = trainer.callback_metrics
+    print(f"Final validation accuracy: {metrics.get('val_acc1', 'N/A')}")
 
 
 if __name__ == "__main__":

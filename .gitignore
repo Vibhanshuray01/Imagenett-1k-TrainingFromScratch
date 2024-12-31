@@ -2,3 +2,4 @@
 lightning_logs/
 
 **/*.pyc
+.DS_Store
