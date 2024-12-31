@@ -33,16 +33,17 @@ class ResNet50Module(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         images, targets = batch
-        
-        # Apply mixup/cutmix
-        images, targets = self.mixup_fn(images, targets)
-        
-        # Forward pass
         outputs = self(images)
         loss = self.criterion(outputs, targets)
         
+        # Calculate training accuracy
+        acc1, acc5 = self._accuracy(outputs, targets, topk=(1, 5))
+        
         # Log metrics
         self.log('train_loss', loss, prog_bar=True, on_epoch=True)
+        self.log('train_acc1', acc1, prog_bar=True, on_epoch=True)
+        self.log('train_acc5', acc5, prog_bar=True, on_epoch=True)
+        
         return loss
 
     def validation_step(self, batch, batch_idx):

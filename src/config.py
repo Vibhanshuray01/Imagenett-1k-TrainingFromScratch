@@ -3,13 +3,13 @@ from dataclasses import dataclass
 @dataclass
 class TrainingConfig:
     # Training params
-    batch_size: int = 32  # Consider increasing if memory allows
+    batch_size: int = 32
     num_workers: int = 8
-    max_epochs: int = 90  # Recommend increasing for ImageNet training
+    max_epochs: int = 90
     precision: str = "16-mixed"
     
     # Optimizer params
-    base_lr: float = 0.1 * (batch_size / 256)  # This is good
+    base_lr: float = 0.1 * (batch_size / 256)
     weight_decay: float = 1e-4
     momentum: float = 0.9
     
@@ -23,8 +23,8 @@ class TrainingConfig:
     cutmix_alpha: float = 1.0
     
     # Scheduler params
-    warmup_epochs: int = 5  # Increase warmup epochs for better stability
-    min_lr: float = 1e-6  # Slightly lower minimum learning rate
+    warmup_epochs: int = 5
+    min_lr: float = 1e-6
     
     # Save model path (you might also want to keep this configurable in your main script)
     checkpoint_dir: str = "/media/data/saved_models"

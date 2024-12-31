@@ -5,16 +5,17 @@ from src.dataset import ImageNetLocalDataset, get_transforms
 from src.model import ResNet50Module
 import torch
 import os
+import torch.distributed as dist
+from pytorch_lightning.callbacks import RichProgressBar
 
 
-class MetricsLoggerCallback(Callback):
-    def on_epoch_end(self, trainer, pl_module):
+class MetricsCallback(Callback):
+    def on_train_epoch_end(self, trainer, pl_module):
+        print(f"\nEpoch {trainer.current_epoch}: train_loss = {trainer.callback_metrics['train_loss']:.3f}")
+        
+    def on_validation_epoch_end(self, trainer, pl_module):
         metrics = trainer.callback_metrics
-        epoch = trainer.current_epoch
-        val_acc1 = metrics.get("val_acc1", "N/A")
-        val_acc5 = metrics.get("val_acc5", "N/A")
-        val_loss = metrics.get("val_loss", "N/A")
-        print(f"Epoch {epoch} - val_acc1: {val_acc1}, val_acc5: {val_acc5}, val_loss: {val_loss}")
+        print(f"Validation: loss = {metrics['val_loss']:.3f}, acc@1 = {metrics['val_acc1']:.2f}%, acc@5 = {metrics['val_acc5']:.2f}%")
 
 
 def main():
@@ -42,14 +43,16 @@ def main():
 
     # Modify callbacks to remove validation-dependent ones
     callbacks = [
-        LearningRateMonitor(logging_interval='step'),
         ModelCheckpoint(
-            monitor='train_loss',  # Changed to monitor training loss instead
-            mode='min',
-            save_top_k=1,
-            filename='resnet50-{epoch:02d}-{train_loss:.2f}',
+            monitor='val_acc1',
+            mode='max',
+            save_top_k=3,
+            filename='resnet50-epoch{epoch:02d}-val_acc{val_acc1:.2f}',
             dirpath=config.checkpoint_dir
-        )
+        ),
+        LearningRateMonitor(logging_interval='step'),
+        MetricsCallback(),
+        RichProgressBar()
     ]
 
     # Initialize trainer without validation
