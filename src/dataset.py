@@ -25,13 +25,30 @@ class ImageNetLocalDataset(Dataset):
         split_dir = os.path.join(self.root_dir, self.split)  # Use split dir correctly
         print(f"Using split directory: {split_dir}")  # Debugging line
 
-        for class_id, class_name in enumerate(sorted(os.listdir(split_dir))):
+        # Add error checking
+        if not os.path.exists(split_dir):
+            raise ValueError(f"Directory not found: {split_dir}")
+            
+        class_dirs = sorted(os.listdir(split_dir))
+        if len(class_dirs) == 0:
+            raise ValueError(f"No class directories found in {split_dir}")
+            
+        print(f"Found {len(class_dirs)} classes in {split_dir}")  # Debug info
+        
+        for class_id, class_name in enumerate(class_dirs):
             class_dir = os.path.join(split_dir, class_name)
-            print(f"Accessing class directory: {class_dir}")  # Debugging line
             if os.path.isdir(class_dir):
-                for image_name in os.listdir(class_dir):
+                image_files = [f for f in os.listdir(class_dir) if f.lower().endswith(('.jpeg', '.jpg', '.png'))]
+                if len(image_files) == 0:
+                    print(f"Warning: No images found in {class_dir}")
+                    continue
+                    
+                for image_name in image_files:
                     self.image_paths.append(os.path.join(class_dir, image_name))
                     self.labels.append(class_id)
+                    
+        if len(self.image_paths) == 0:
+            raise ValueError(f"No images found in {split_dir}")
 
 
     def __len__(self):
