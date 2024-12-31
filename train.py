@@ -1,5 +1,6 @@
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, RichProgressBar
+from pytorch_lightning.loggers import TensorBoardLogger
 from src.config import TrainingConfig
 from src.dataset import ImageNetLocalDataset, get_transforms
 from src.model import ResNet50Module
@@ -7,6 +8,9 @@ import torch
 import os
 
 def main():
+    # Set tensor core precision
+    torch.set_float32_matmul_precision('high')
+    
     # Initialize config
     config = TrainingConfig()
     
@@ -23,7 +27,9 @@ def main():
         transform=get_transforms(config, is_train=False)
     )
 
-    # Create dataloaders
+    print(f"Training dataset size: {len(train_dataset)}")
+    print(f"Validation dataset size: {len(val_dataset)}")
+
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config.batch_size,
@@ -44,6 +50,9 @@ def main():
     # Create model
     model = ResNet50Module(config)
 
+    # Setup logging
+    logger = TensorBoardLogger("logs", name="resnet50")
+
     # Create callbacks
     callbacks = [
         ModelCheckpoint(
@@ -62,6 +71,7 @@ def main():
         max_epochs=config.max_epochs,
         precision=config.precision,
         callbacks=callbacks,
+        logger=logger,
         gradient_clip_val=1.0,
         accumulate_grad_batches=2,
         devices=1,

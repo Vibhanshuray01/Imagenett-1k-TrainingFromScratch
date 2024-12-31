@@ -5,3 +5,4 @@ pytorch-lightning
 timm
 tqdm
 rich
+tensorboard
